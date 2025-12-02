@@ -1,0 +1,14 @@
+apiVersion: k8s.mariadb.com/v1alpha1
+kind: Database
+metadata:
+  name: login
+spec:
+  # If you want the database to be created with a different name than the resource name
+  # name: data-custom
+  name: login
+  mariaDbRef:
+    name: mariadb-galera
+  characterSet: utf8
+  collate: utf8_general_ci
+  requeueInterval: 30s
+  retryInterval: 5s

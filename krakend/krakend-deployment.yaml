@@ -1,0 +1,73 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: krakend-deploy
+  namespace: default
+  labels:
+    application: apigateway
+spec:
+  replicas: 1
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  minReadySeconds: 5
+  revisionHistoryLimit: 3
+  selector:
+    matchLabels:
+      application: apigateway
+  template:
+    metadata:
+      labels:
+        application: apigateway
+    spec:
+      automountServiceAccountToken: false
+      containers:
+        - name: application
+          resources:
+            requests:
+              memory: '64Mi'
+              cpu: '100m'
+            limits:
+              memory: '1024Mi'
+              cpu: '1000m'
+          image: devopsfaith/krakend:2.5.1
+          imagePullPolicy: IfNotPresent
+          command: ["/usr/bin/krakend", "run", "-c", "/etc/krakend/krakend.json", "-p", "8001"]
+          ports:
+            - containerPort: 8001
+          env:
+            - name: KRAKEND_PORT
+              value: "8001"
+          volumeMounts:
+          - name: krakend-cfg
+            mountPath: /etc/krakend/krakend.json
+            subPath: krakend.json
+          - name: krakensecrets
+            mountPath: /etc/krakensecrets
+      volumes:
+        - name: krakend-cfg
+          configMap:
+            name: krakend-cfg
+        - name: krakensecrets
+          secret:
+            secretName: krakendjwt
+            items:
+              - key: publickey.json
+                path: publickey.json
+ 
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: apigateway
+  labels:
+    application: apigateway
+spec:
+  type: ClusterIP
+  selector:
+    application: apigateway
+  ports:
+    - port: 8001
+      targetPort: 8001

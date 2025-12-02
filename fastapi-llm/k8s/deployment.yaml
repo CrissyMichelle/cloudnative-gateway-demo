@@ -1,0 +1,57 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: llmserver
+  namespace: default
+  labels:
+    app: llmserver
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: llmserver
+  template:
+    metadata:
+      labels:
+        app: llmserver
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8001"
+    spec:
+      containers:
+      - name: llmpod
+        image: severedlone16042025.azurecr.io/fastapillm:v3
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8001
+        resources: # Task 2
+          requests:
+            cpu: "200m"
+            memory: "256Mi"
+          limits:
+            cpu: "1"
+            memory: "1Gi"
+        startupProbe:
+          httpGet:
+            path: /healthcheck
+            port: 8001
+          initialDelaySeconds: 5
+          timeoutSeconds: 5
+          periodSeconds: 15
+          failureThreshold: 10
+        readinessProbe:
+          httpGet:
+            path: /healthcheck
+            port: 8001
+          timeoutSeconds: 5
+          periodSeconds: 10
+          failureThreshold: 6
+        livenessProbe:
+          httpGet:
+            path: /healthcheck
+            port: 8001
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 5
+          failureThreshold: 3
+      terminationGracePeriodSeconds: 30

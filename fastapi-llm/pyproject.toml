@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "fastapi-p4"
+version = "0.1.0"
+description = ""
+authors = ["Arav Agarwal <arava@andrew.cmu.edu>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.8"
+fastapi = "^0.109.2"
+uvicorn = {extras = ["standard"], version = "^0.27.1"}
+gunicorn = "^21.2.0"
+llama-cpp-python = "^0.2.44"
+
+
+[tool.poetry.group.dev.dependencies]
+mypy = "^1.8.0"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"

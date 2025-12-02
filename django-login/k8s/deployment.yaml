@@ -1,0 +1,105 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: login
+  namespace: default
+  labels:
+    app: login
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: login
+  template:
+    metadata:
+      labels:
+        app: login
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+    spec:
+      initContainers:
+      - name: wait-for-db
+        image: busybox
+        command: ["sh","-c","until nc -z mariadb-galera 3306; do echo waiting; sleep 5; done"]
+      - name: logininit
+        image: severedlone16042025.azurecr.io/login:v2
+        command: ["sh", "-c", "python manage.py migrate --fake-initial && python manage.py createsuperuser --no-input || true"]
+        env:
+          - name: "DJANGO_SUPERUSER_USERNAME"
+            value: "admin"
+          - name: "DJANGO_SUPERUSER_EMAIL"
+            value: "testme@test.com"
+          - name: "DJANGO_SUPERUSER_PASSWORD"
+            value: "asdasd"
+          - name: MYSQL_HOST
+            value: "mariadb-galera.default.svc.cluster.local"
+          - name: MYSQL_PORT
+            value: "3306"
+          - name: MYSQL_DATABASE
+            value: "login"
+          - name: MYSQL_USER
+            value: "root"
+          - name: MYSQL_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: mariadb
+                key: root-password
+      containers:
+      - name: login
+        image: severedlone16042025.azurecr.io/login:v2
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+        resources:
+          requests:
+            cpu: "200m"
+            memory: "256Mi"
+          limits:
+            cpu: "1"
+            memory: "1Gi"
+        env:
+          - name: PRIVATE_KEY
+            valueFrom:
+              secretKeyRef:
+                name: loginkeys
+                key: private_key.pem
+          - name: PUBLIC_KEY
+            valueFrom:
+              secretKeyRef:
+                name: loginkeys
+                key: public_key.pem
+          - name: DJANGO_SECRET_KEY
+            valueFrom:
+              secretKeyRef:
+                name: loginkeys
+                key: django-secret-key
+          - name: MYSQL_HOST
+            value: "mariadb-galera.default.svc.cluster.local"
+          - name: MYSQL_PORT
+            value: "3306"
+          - name: MYSQL_DATABASE
+            value: "login"
+          - name: MYSQL_USER
+            value: "root"
+          - name: MYSQL_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: mariadb
+                key: root-password
+        readinessProbe:
+          httpGet:
+            path: /healthcheck/
+            port: 8080
+          initialDelaySeconds: 10
+          timeoutSeconds: 5
+          periodSeconds: 15
+          failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            path: /healthcheck/
+            port: 8080
+          initialDelaySeconds: 30
+          timeoutSeconds: 5
+          periodSeconds: 30
+          failureThreshold: 3
