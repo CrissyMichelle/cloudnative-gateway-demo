@@ -56,8 +56,7 @@ cloudnative-gateway-demo/
 │   ├── docker/Dockerfile
 │   ├── k8s/deployment.yaml
 │   ├── k8s/service.yaml
-│   ├── poetry.lock / pyproject.toml
-│   └── tests/ (if present)
+│   └── poetry.lock / pyproject.toml
 │
 ├── gateway/           # Kubernetes Gateway API configuration
 │   ├── gateway.yaml
